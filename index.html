@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Orange's Personal Shopping Tracker</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Auth Container -->
+  <div id="auth-container" class="container mt-5">
+    <div class="row justify-content-center">
+      <div class="col-md-6">
+        <!-- Login Form -->
+        <div id="login-form" class="card mb-4">
+          <div class="card-body">
+            <h2 class="text-center mb-4">Login</h2>
+            <form id="login">
+              <div class="mb-3">
+                <input type="email" class="form-control" id="login-email" placeholder="Email" required>
+              </div>
+              <div class="mb-3">
+                <input type="password" class="form-control" id="login-password" placeholder="Password" required>
+              </div>
+              <button type="submit" class="btn btn-primary w-100">Login</button>
+            </form>
+            <p class="text-center mt-3">
+              Don't have an account? <a href="#" id="show-register">Register</a>
+            </p>
+          </div>
+        </div>
+
+        <!-- Register Form -->
+        <div id="register-form" class="card mb-4" style="display: none;">
+          <div class="card-body">
+            <h2 class="text-center mb-4">Register</h2>
+            <form id="register">
+              <div class="mb-3">
+                <input type="text" class="form-control" id="register-name" placeholder="Name" required>
+              </div>
+              <div class="mb-3">
+                <input type="email" class="form-control" id="register-email" placeholder="Email" required>
+              </div>
+              <div class="mb-3">
+                <input type="password" class="form-control" id="register-password" placeholder="Password" required>
+              </div>
+              <button type="submit" class="btn btn-primary w-100">Register</button>
+            </form>
+            <p class="text-center mt-3">
+              Already have an account? <a href="#" id="show-login">Login</a>
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="main-content" class="container mt-5" style="display: none;">
+    <!-- Logout button container -->
+    <div class="position-absolute top-0 end-0 mt-3 me-3">
+      <button id="logout-btn" class="btn btn-danger btn-sm">Logout</button>
+    </div>
+    
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <h1 id="welcome-header" class="w-100 text-center">Personal Shopping Tracker</h1>
+    </div>
+    <form id="shopping-form" class="mb-4">
+      <div class="row">
+        <div class="col-md-4">
+          <input type="text" class="form-control" id="itemName" placeholder="Item Name" required>
+        </div>
+        <div class="col-md-3">
+          <input type="number" class="form-control" id="itemPrice" placeholder="Price" required>
+        </div>
+        <div class="col-md-3">
+          <input type="date" class="form-control" id="purchaseDate" required>
+        </div>
+        <div class="col-md-2">
+          <button type="submit" class="btn btn-primary">Add Item</button>
+        </div>
+      </div>
+    </form>
+
+
+    <thead>
+      <tr>
+       
+        <th>
+          Price
+          <select id="price-sort" class="form-select form-select-sm" onchange="handleSortFilter('price')">
+            <option value="none">Sort by Price</option>
+            <option value="high-to-low">High to Low</option>
+            <option value="low-to-high">Low to High</option>
+          </select>
+        </th>
+        <th>
+          Purchase Date
+          <select id="date-sort" class="form-select form-select-sm" onchange="handleSortFilter('date')">
+            <option value="none">Sort by Date</option>
+            <option value="earliest-to-latest">Earliest to Latest</option>
+            <option value="latest-to-earliest">Latest to Earliest</option>
+          </select>
+        </th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+
+    <table class="table table-striped">
+      <thead>
+        <tr>
+          <th>Item Name</th>
+          <th>Price</th>
+          <th>Purchase Date</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="item-list">
+        <!-- Dynamic rows will be added here -->
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Random Quote Section -->
+  <div class="container mt-5">
+    <h2 class="text-center">Random Quote</h2>
+    <p id="quote" class="text-center" style="font-size: 1.2rem; font-weight: bold;"></p>
+    <button id="new-quote" class="btn btn-primary d-block mx-auto">Get New Quote</button>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
