@@ -10,17 +10,17 @@ let authToken = localStorage.getItem('token');
 let currentUser = JSON.parse(localStorage.getItem('user'));
 
 // Load initial data using fetch
-async function loadInitialData() {
-  try {
-    const response = await fetch('data.json');
-    if (!response.ok) throw new Error('Failed to fetch data.');
-    const data = await response.json();
-    items = data;
-    updateTable();
-  } catch (error) {
-    console.error('Error loading data:', error);
-  }
-}
+// async function loadInitialData() {
+//   try {
+//     const response = await fetch('data.json');
+//     if (!response.ok) throw new Error('Failed to fetch data.');
+//     const data = await response.json();
+//     items = data;
+//     updateTable();
+//   } catch (error) {
+//     console.error('Error loading data:', error);
+//   }
+// }
 
 // Show/hide auth forms
 document.getElementById('show-register').addEventListener('click', (e) => {
@@ -214,10 +214,8 @@ function showMainContent() {
     welcomeHeader.textContent = `${currentUser.name}'s Personal Shopping Tracker`;
   }
   
-  // Load initial data if needed
-  if (items.length === 0) {
-    loadInitialData();
-  }
+  // Load items from database
+  loadItems();
 }
 
 // Load items from API
@@ -241,7 +239,29 @@ async function loadItems() {
   }
 }
 
-// Update form submission to use API
+// Update the edit function to store the item being edited
+let editingItem = null; // Add this at the top with other global variables
+
+// Update edit function
+async function editItem(index) {
+  const item = items[index];
+  editingItem = item; // Store the item being edited
+  
+  // Fill the form with item data
+  document.getElementById('itemName').value = item.name;
+  document.getElementById('itemPrice').value = item.price;
+  
+  // Format the date properly for the input
+  const itemDate = new Date(item.date);
+  const formattedDate = itemDate.toISOString().split('T')[0];
+  document.getElementById('purchaseDate').value = formattedDate;
+
+  // Change submit button text to indicate editing
+  const submitButton = document.getElementById('shopping-form').querySelector('button[type="submit"]');
+  submitButton.textContent = 'Update Item';
+}
+
+// Update form submission handler
 document.getElementById('shopping-form').addEventListener('submit', async (e) => {
   e.preventDefault();
 
@@ -250,26 +270,66 @@ document.getElementById('shopping-form').addEventListener('submit', async (e) =>
   const date = document.getElementById('purchaseDate').value;
 
   try {
-    const response = await fetch(`${API_URL}/items`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${authToken}`
-      },
-      body: JSON.stringify({ name, price, date })
-    });
+    if (editingItem) {
+      // Update existing item
+      const response = await fetch(`${API_URL}/items/${editingItem._id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authToken}`
+        },
+        body: JSON.stringify({ 
+          name, 
+          price, 
+          date: new Date(date).toISOString() 
+        })
+      });
 
-    if (response.ok) {
-      const newItem = await response.json();
-      items.push(newItem);
-      updateTable();
-      document.getElementById('shopping-form').reset();
+      if (response.ok) {
+        const updatedItem = await response.json();
+        // Replace the old item with updated one
+        const index = items.findIndex(item => item._id === editingItem._id);
+        if (index !== -1) {
+          items[index] = updatedItem;
+        }
+        // Reload items from server to ensure consistency
+        await loadItems();
+      } else {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to update item');
+      }
     } else {
-      throw new Error('Failed to add item');
+      // Add new item
+      const response = await fetch(`${API_URL}/items`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authToken}`
+        },
+        body: JSON.stringify({ 
+          name, 
+          price, 
+          date: new Date(date).toISOString() 
+        })
+      });
+
+      if (response.ok) {
+        // Reload items from server
+        await loadItems();
+      } else {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to add item');
+      }
     }
+
+    // Reset form and update UI
+    document.getElementById('shopping-form').reset();
+    const submitButton = document.getElementById('shopping-form').querySelector('button[type="submit"]');
+    submitButton.textContent = 'Add Item';
+    editingItem = null; // Reset editing state
   } catch (error) {
-    console.error('Error adding item:', error);
-    alert('Error adding item');
+    console.error('Error saving item:', error);
+    alert(error.message || 'Error saving item');
   }
 });
 
@@ -296,23 +356,9 @@ async function deleteItem(index) {
   }
 }
 
-// Update edit function to use API
-async function editItem(index) {
-  const item = items[index];
-  document.getElementById('itemName').value = item.name;
-  document.getElementById('itemPrice').value = item.price;
-  document.getElementById('purchaseDate').value = item.date;
-
-  // Store the item ID for updating
-  document.getElementById('shopping-form').dataset.editId = item._id;
-  items.splice(index, 1);
-  updateTable();
-}
-
 // Check auth status on page load
 if (authToken) {
   showMainContent();
-  loadItems();
 } else {
   document.getElementById('auth-container').style.display = 'block';
   document.getElementById('main-content').style.display = 'none';
@@ -440,4 +486,58 @@ document.addEventListener('DOMContentLoaded', async () => {
     console.error('Cannot connect to server');
     alert('Server connection failed. Please ensure the backend server is running on port 5001.');
   }
+});
+
+// Search functionality
+async function searchItems(searchTerm) {
+  try {
+    const response = await fetch(`${API_URL}/items/search?name=${encodeURIComponent(searchTerm)}`, {
+      headers: {
+        'Authorization': `Bearer ${authToken}`
+      }
+    });
+
+    if (response.ok) {
+      const searchResults = await response.json();
+      items = searchResults; // Update items array with search results
+      updateTable();
+    } else {
+      throw new Error('Failed to search items');
+    }
+  } catch (error) {
+    console.error('Error searching items:', error);
+    alert('Error searching items');
+  }
+}
+
+// Add event listeners for search
+document.addEventListener('DOMContentLoaded', () => {
+  const searchInput = document.getElementById('searchInput');
+  const searchButton = document.getElementById('searchButton');
+  const clearSearch = document.getElementById('clearSearch');
+
+  // Search button click
+  searchButton.addEventListener('click', () => {
+    const searchTerm = searchInput.value.trim();
+    if (searchTerm) {
+      searchItems(searchTerm);
+    }
+  });
+
+  // Search on Enter key
+  searchInput.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault(); // Prevent form submission
+      const searchTerm = searchInput.value.trim();
+      if (searchTerm) {
+        searchItems(searchTerm);
+      }
+    }
+  });
+
+  // Clear search
+  clearSearch.addEventListener('click', () => {
+    searchInput.value = '';
+    loadItems(); // Reset to show all items
+  });
 });
